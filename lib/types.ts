@@ -10,6 +10,7 @@ export interface LabStep {
   mission: string;
   insight: string;
   hint?: string;
+  discussion?: string[];
   expectFailure?: boolean;
   tabs: LabTab[];
   files: Record<string, string>;

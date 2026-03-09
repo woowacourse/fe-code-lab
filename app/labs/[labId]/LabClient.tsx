@@ -23,6 +23,7 @@ export default function LabClient({ lab }: LabClientProps) {
   const [testResults, setTestResults] = useState<TestResult[] | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+  const [testPanelOpen, setTestPanelOpen] = useState(true);
 
   const step = lab.steps[currentStep];
   const tabs = step.tabs;
@@ -149,11 +150,12 @@ export default function LabClient({ lab }: LabClientProps) {
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Guide Panel */}
-        <div className="w-[380px] shrink-0 border-r border-border overflow-hidden">
+        <div className="w-[340px] shrink-0 border-r border-border overflow-hidden">
           <GuidePanel
             step={step}
             currentStep={currentStep}
             totalSteps={lab.steps.length}
+            isCompleted={stepCompleted[currentStep]}
             onPrev={handlePrev}
             onNext={handleNext}
           />
@@ -187,15 +189,27 @@ export default function LabClient({ lab }: LabClientProps) {
               readonly={currentTabReadonly}
             />
           </div>
+        </div>
 
-          {/* Test Results */}
-          <div className="h-48 shrink-0 border-t border-border">
+        {/* Test Results - Right Column (collapsible) */}
+        <div className={`shrink-0 border-l border-border transition-all duration-200 ${testPanelOpen ? 'w-[320px]' : 'w-10'}`}>
+          {testPanelOpen ? (
             <TestResultsPanel
               results={testResults}
               onRun={handleRunTests}
               isRunning={isRunning}
+              onToggle={() => setTestPanelOpen(false)}
             />
-          </div>
+          ) : (
+            <button
+              onClick={() => setTestPanelOpen(true)}
+              className="flex h-full w-full flex-col items-center justify-center gap-2 text-text-muted hover:text-text-secondary transition-colors"
+              title="테스트 패널 열기"
+            >
+              <span className="text-xs font-semibold [writing-mode:vertical-rl]">테스트 결과</span>
+              <span className="text-xs">◂</span>
+            </button>
+          )}
         </div>
       </div>
 

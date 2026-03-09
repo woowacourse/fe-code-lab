@@ -7,6 +7,7 @@ interface GuidePanelProps {
   step: LabStep;
   currentStep: number;
   totalSteps: number;
+  isCompleted: boolean;
   onPrev: () => void;
   onNext: () => void;
 }
@@ -15,6 +16,7 @@ export default function GuidePanel({
   step,
   currentStep,
   totalSteps,
+  isCompleted,
   onPrev,
   onNext,
 }: GuidePanelProps) {
@@ -56,6 +58,23 @@ export default function GuidePanel({
           />
         </div>
 
+        {/* Discussion questions */}
+        {step.discussion && step.discussion.length > 0 && (
+          <div className="rounded-md bg-bg-elevated border border-yellow/30 overflow-hidden">
+            <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-yellow border-b border-yellow/20 flex items-center gap-1.5">
+              <span>💬</span> 페어와 토론하세요
+            </div>
+            <ul className="p-4 space-y-3">
+              {step.discussion.map((q, i) => (
+                <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-text-secondary">
+                  <span className="mt-0.5 shrink-0 text-yellow font-bold text-xs">Q{i + 1}</span>
+                  <span>{q}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Hint toggle */}
         {step.hint && (
           <div>
@@ -74,14 +93,20 @@ export default function GuidePanel({
           </div>
         )}
 
-        {/* Insight card */}
-        <div className="rounded-md bg-gradient-to-br from-purple/10 to-purple/5 border border-purple/20 p-4">
-          <div className="mb-2 text-sm font-bold text-purple">★ Insight</div>
-          <div
-            className="guide-html text-sm leading-relaxed text-text-secondary"
-            {...htmlProps(step.insight)}
-          />
-        </div>
+        {/* Insight card — revealed after step completion */}
+        {isCompleted ? (
+          <div className="rounded-md bg-gradient-to-br from-purple/10 to-purple/5 border border-purple/20 p-4">
+            <div className="mb-2 text-sm font-bold text-purple">★ Insight</div>
+            <div
+              className="guide-html text-sm leading-relaxed text-text-secondary"
+              {...htmlProps(step.insight)}
+            />
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed border-purple/20 p-4 text-center">
+            <span className="text-xs text-text-muted">★ 미션을 완료하면 Insight가 공개됩니다</span>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

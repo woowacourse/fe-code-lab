@@ -6,6 +6,11 @@ export const step3: LabStep = {
   description: '문제를 확인했으니 이제 해결해봅시다.<br><br><strong>Lotto</strong> 클래스에서 UI 로직(<code>printNumbers</code>, <code>printMatchResult</code>)을 <strong>제거</strong>하고, 대신 외부에서 번호를 가져갈 수 있도록 <code>getNumbers()</code> 메서드를 추가하세요.<br><br>도메인 객체는 <strong>데이터와 비즈니스 로직만</strong> 가져야 합니다.',
   mission: '<code>printNumbers()</code>와 <code>printMatchResult()</code>를 제거하고, <code>getNumbers()</code> 메서드를 추가하세요.',
   insight: '도메인 객체가 "어떻게 보여줄지"를 모르게 만드는 것이 핵심입니다. 번호를 어디에 어떤 형태로 보여줄지는 UI의 관심사이지, Lotto의 관심사가 아닙니다.',
+  discussion: [
+    'getNumbers()가 복사본을 반환해야 하는 이유는 무엇인가요? 원본 배열을 반환하면 어떤 문제가 생길까요?',
+    'printNumbers()를 제거한 후, 테스트 코드에서 달라진 점은 무엇인가요?',
+    '이제 Lotto 클래스는 "어떻게 보여줄지"에 대해 알고 있나요?',
+  ],
   hint: '<code>getNumbers()</code>는 내부 배열의 복사본을 반환합니다.<br><code>return [...this.#numbers];</code><br><br>복사본을 반환하는 이유: 외부에서 원본 배열을 수정하는 것을 방지합니다 (캡슐화).',
   tabs: [
     { name: 'Lotto.js', readonly: false },

@@ -3,9 +3,14 @@ import { LabStep } from '@/lib/types';
 export const step1: LabStep = {
   badge: 'STEP 1 · 관찰',
   title: '도메인과 UI가\n섞여 있는 코드',
-  description: '아래 <strong>Lotto</strong> 클래스를 살펴보세요.<br><br>이 클래스는 로또 번호를 관리하고, 당첨 번호와 비교하는 <strong>도메인 로직</strong>과 결과를 콘솔에 출력하는 <strong>UI 로직</strong>이 한 곳에 섞여 있습니다.<br><br><strong>어떤 메서드가 도메인이고, 어떤 메서드가 UI인지</strong> 페어와 이야기해보세요.',
+  description: '아래 <strong>Lotto</strong> 클래스를 살펴보세요.<br><br>이 클래스에는 <strong>여러 가지 역할의 메서드</strong>가 한 곳에 모여 있습니다.<br><br>각 메서드가 <strong>어떤 역할</strong>을 하는지 페어와 이야기해보세요.',
   mission: '코드를 읽고 테스트를 실행해보세요. 모든 테스트가 통과합니다.',
   insight: '하나의 클래스가 "데이터 관리 + 비즈니스 로직 + 출력"을 모두 담당하고 있습니다. 지금은 잘 동작하지만, UI가 바뀌면 어떻게 될까요?',
+  discussion: [
+    '각 메서드를 "데이터를 다루는 것"과 "결과를 보여주는 것"으로 나눠보세요.',
+    'printNumbers()와 matchCount()의 차이는 무엇인가요? 하나를 제거하면 나머지에 영향이 있을까요?',
+    '만약 콘솔이 아니라 웹 화면에 결과를 보여줘야 한다면, 어떤 메서드를 바꿔야 할까요?',
+  ],
   tabs: [
     { name: 'Lotto.js', readonly: true },
     { name: 'test.js', readonly: true }
@@ -31,19 +36,16 @@ export const step1: LabStep = {
     }
   }
 
-  // 도메인 로직
   matchCount(targetNumbers) {
     return this.#numbers.filter(n =>
       targetNumbers.includes(n)
     ).length;
   }
 
-  // UI 로직 — 콘솔에 출력
   printNumbers() {
     console.log("[" + this.#numbers.join(", ") + "]");
   }
 
-  // UI 로직 — 콘솔에 매칭 결과 출력
   printMatchResult(winningNumbers) {
     const count = this.matchCount(winningNumbers);
     console.log(count + "개 일치");

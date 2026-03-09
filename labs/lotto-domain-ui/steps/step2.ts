@@ -6,6 +6,11 @@ export const step2: LabStep = {
   description: '이제 <strong>웹 UI</strong>로 출력을 바꿔봅시다.<br><br><code>printNumbers()</code> 메서드를 수정해서 <code>console.log</code> 대신 <strong>HTML 문자열을 반환</strong>하도록 바꿔보세요.<br><br>수정 후 테스트를 실행해보면... <strong>기존 테스트가 깨집니다!</strong>',
   mission: '<code>printNumbers()</code>가 <code>console.log</code> 대신 HTML 문자열을 반환하도록 수정하세요. 그리고 테스트를 실행해보세요.',
   insight: 'UI 변경이 도메인 테스트까지 깨뜨리는 상황입니다. 도메인과 UI가 섞여 있으면, 한쪽을 바꿀 때 다른 쪽도 영향을 받습니다. 이것이 "관심사 분리"가 필요한 이유입니다.',
+  discussion: [
+    '깨진 테스트를 살펴보세요. 이 테스트가 검증하는 건 "도메인 로직"인가요, "출력 방식"인가요?',
+    'UI를 바꿨을 뿐인데 왜 도메인 테스트가 깨질까요? 이 구조의 문제는 무엇인가요?',
+    '만약 콘솔 → 웹 → 모바일로 UI가 계속 바뀐다면, 매번 테스트를 다시 써야 할까요?',
+  ],
   hint: '<code>printNumbers()</code> 안에서 console.log 대신<br><code>return "&lt;div class=\\"lotto\\"&gt;" + this.#numbers.join(", ") + "&lt;/div&gt;";</code><br>처럼 HTML을 반환하도록 바꿔보세요.',
   expectFailure: true,
   tabs: [
