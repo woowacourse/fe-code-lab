@@ -3,14 +3,21 @@ export interface LabTab {
   readonly: boolean;
 }
 
+export interface LabReference {
+  title: string;
+  url: string;
+  description?: string;
+}
+
 export interface LabStep {
   badge: string;
   title: string;
   description: string;
-  mission: string;
+  mission: string[];
   insight: string;
   hint?: string;
   discussion?: string[];
+  references?: LabReference[];
   expectFailure?: boolean;
   tabs: LabTab[];
   files: Record<string, string>;

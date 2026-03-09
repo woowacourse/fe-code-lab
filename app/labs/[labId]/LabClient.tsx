@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { LabConfig, TestResult } from '@/lib/types';
 import { runTestsInWorker } from '@/lib/test-runner';
 import CodeEditor from '@/components/CodeEditor';
 import StepIndicator from '@/components/StepIndicator';
 import GuidePanel from '@/components/GuidePanel';
 import TestResultsPanel from '@/components/TestResultsPanel';
+import DiscussionPanel from '@/components/DiscussionPanel';
 import CompletionOverlay from '@/components/CompletionOverlay';
 
 interface LabClientProps {
@@ -14,20 +15,73 @@ interface LabClientProps {
 }
 
 export default function LabClient({ lab }: LabClientProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(() => {
+    if (typeof window === 'undefined') return 0;
+    const match = window.location.hash.match(/step=(\d+)/);
+    if (match) {
+      const idx = Number(match[1]) - 1;
+      if (idx >= 0 && idx < lab.steps.length) return idx;
+    }
+    return 0;
+  });
   const [activeTab, setActiveTab] = useState(0);
   const [stepCompleted, setStepCompleted] = useState<boolean[]>(
     () => new Array(lab.steps.length).fill(false)
   );
-  const [userEdits, setUserEdits] = useState<Record<string, string>>({});
+  const [userEdits, setUserEdits] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const saved = localStorage.getItem(`lab:${lab.id}:edits`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
   const [testResults, setTestResults] = useState<TestResult[] | null>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
   const [testPanelOpen, setTestPanelOpen] = useState(true);
+  const [discussionSubmitted, setDiscussionSubmitted] = useState<boolean[]>(
+    () => new Array(lab.steps.length).fill(false)
+  );
+  const [discussionWidth, setDiscussionWidth] = useState(340);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  // 스텝 변경 시 해시 업데이트
+  useEffect(() => {
+    window.location.hash = `step=${currentStep + 1}`;
+  }, [currentStep]);
+
+  // 에디터 코드 변경 시 localStorage 저장
+  useEffect(() => {
+    try {
+      localStorage.setItem(`lab:${lab.id}:edits`, JSON.stringify(userEdits));
+    } catch {
+      // localStorage 용량 초과 등 무시
+    }
+  }, [lab.id, userEdits]);
+
+  // 브라우저 뒤로가기/앞으로가기 대응
+  useEffect(() => {
+    const onHashChange = () => {
+      const match = window.location.hash.match(/step=(\d+)/);
+      if (match) {
+        const stepIndex = Number(match[1]) - 1;
+        if (stepIndex >= 0 && stepIndex < lab.steps.length) {
+          setCurrentStep(stepIndex);
+          setActiveTab(0);
+          setTestResults(null);
+        }
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [lab.steps.length]);
 
   const step = lab.steps[currentStep];
   const tabs = step.tabs;
-  const tabNames = tabs.map((t) => t.name);
+  const hasDiscussion = step.discussion && step.discussion.length > 0;
 
   const getCodeForTab = useCallback(
     (stepIndex: number, tabIndex: number): string => {
@@ -50,7 +104,6 @@ export default function LabClient({ lab }: LabClientProps) {
 
   const handleTabSwitch = useCallback(
     (tabIndex: number) => {
-      // Save current editor content before switching
       const currentCode = getCodeForTab(currentStep, activeTab);
       const key = `${currentStep}-${activeTab}`;
       setUserEdits((prev) => ({ ...prev, [key]: currentCode }));
@@ -61,7 +114,6 @@ export default function LabClient({ lab }: LabClientProps) {
 
   const handleStepChange = useCallback(
     (stepIndex: number) => {
-      // Save current edits
       const currentCode = getCodeForTab(currentStep, activeTab);
       const key = `${currentStep}-${activeTab}`;
       setUserEdits((prev) => ({ ...prev, [key]: currentCode }));
@@ -79,6 +131,21 @@ export default function LabClient({ lab }: LabClientProps) {
   const handleNext = useCallback(() => {
     if (currentStep < lab.steps.length - 1) handleStepChange(currentStep + 1);
   }, [currentStep, lab.steps.length, handleStepChange]);
+
+  const handleDiscussionSubmit = useCallback(
+    (_answer: string) => {
+      setDiscussionSubmitted((prev) => {
+        const next = [...prev];
+        next[currentStep] = true;
+        return next;
+      });
+    },
+    [currentStep]
+  );
+
+  const handleFinishLab = useCallback(() => {
+    setShowCompletion(true);
+  }, []);
 
   const handleRunTests = useCallback(async () => {
     setIsRunning(true);
@@ -102,7 +169,6 @@ export default function LabClient({ lab }: LabClientProps) {
       const results = await runTestsInWorker(codeBlocks, testCode);
       setTestResults(results);
 
-      // Determine completion
       const allPass = results.every((r) => r.pass);
       const anyFail = results.some((r) => !r.pass);
       const isComplete = step.expectFailure ? anyFail : allPass;
@@ -113,22 +179,46 @@ export default function LabClient({ lab }: LabClientProps) {
           next[currentStep] = true;
           return next;
         });
-
-        // Show completion overlay if final step
-        if (currentStep === lab.steps.length - 1) {
-          setTimeout(() => setShowCompletion(true), 800);
-        }
       }
     } finally {
       setIsRunning(false);
     }
   }, [tabs, step, currentStep, getCodeForTab, lab.steps.length]);
 
+  const handleResizeStart = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault();
+      dragRef.current = { startX: e.clientX, startWidth: discussionWidth };
+      setIsDragging(true);
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    },
+    [discussionWidth]
+  );
+
+  const handleResizeMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragRef.current) return;
+      const delta = dragRef.current.startX - e.clientX;
+      const newWidth = Math.min(600, Math.max(280, dragRef.current.startWidth + delta));
+      setDiscussionWidth(newWidth);
+    },
+    []
+  );
+
+  const handleResizeEnd = useCallback(() => {
+    dragRef.current = null;
+    setIsDragging(false);
+  }, []);
+
+  const handleResizeDoubleClick = useCallback(() => {
+    setDiscussionWidth(340);
+  }, []);
+
   const currentCode = getCodeForTab(currentStep, activeTab);
   const currentTabReadonly = tabs[activeTab]?.readonly ?? true;
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-bg-deep">
+    <div className={`flex h-screen flex-col overflow-hidden bg-bg-deep ${isDragging ? 'select-none cursor-col-resize' : ''}`}>
       {/* Top Bar */}
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
         <div className="flex items-center gap-3">
@@ -147,21 +237,23 @@ export default function LabClient({ lab }: LabClientProps) {
         />
       </div>
 
-      {/* Main Content */}
+      {/* Main Content: Guide | Editor+Tests | Discussion */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Guide Panel */}
+        {/* Left — Guide Panel */}
         <div className="w-[340px] shrink-0 border-r border-border overflow-hidden">
           <GuidePanel
             step={step}
             currentStep={currentStep}
             totalSteps={lab.steps.length}
             isCompleted={stepCompleted[currentStep]}
+            isDiscussionSubmitted={discussionSubmitted[currentStep]}
             onPrev={handlePrev}
             onNext={handleNext}
+            onFinish={handleFinishLab}
           />
         </div>
 
-        {/* Editor Area */}
+        {/* Center — Code Editor + Test Results (bottom toggle) */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Tab Bar */}
           <div className="flex border-b border-border bg-bg-surface">
@@ -189,34 +281,65 @@ export default function LabClient({ lab }: LabClientProps) {
               readonly={currentTabReadonly}
             />
           </div>
+
+          {/* Test Results — bottom collapsible panel */}
+          <TestResultsPanel
+            results={testResults}
+            onRun={handleRunTests}
+            isRunning={isRunning}
+            isOpen={testPanelOpen}
+            onToggle={() => setTestPanelOpen((v) => !v)}
+          />
         </div>
 
-        {/* Test Results - Right Column (collapsible) */}
-        <div className={`shrink-0 border-l border-border transition-all duration-200 ${testPanelOpen ? 'w-[320px]' : 'w-10'}`}>
-          {testPanelOpen ? (
-            <TestResultsPanel
-              results={testResults}
-              onRun={handleRunTests}
-              isRunning={isRunning}
-              onToggle={() => setTestPanelOpen(false)}
-            />
-          ) : (
-            <button
-              onClick={() => setTestPanelOpen(true)}
-              className="flex h-full w-full flex-col items-center justify-center gap-2 text-text-muted hover:text-text-secondary transition-colors"
-              title="테스트 패널 열기"
+        {/* Right — Discussion Panel (resizable) */}
+        {hasDiscussion && (
+          <>
+            {/* Resize Handle */}
+            <div
+              className={`group relative w-1 shrink-0 cursor-col-resize transition-colors ${
+                isDragging ? 'bg-blue' : 'bg-border hover:bg-blue/50'
+              }`}
+              onPointerDown={handleResizeStart}
+              onPointerMove={handleResizeMove}
+              onPointerUp={handleResizeEnd}
+              onDoubleClick={handleResizeDoubleClick}
             >
-              <span className="text-xs font-semibold [writing-mode:vertical-rl]">테스트 결과</span>
-              <span className="text-xs">◂</span>
-            </button>
-          )}
-        </div>
+              <div
+                className={`absolute inset-y-0 -left-1 -right-1 ${
+                  isDragging ? '' : 'group-hover:bg-blue/10'
+                }`}
+              />
+              {/* Drag indicator dots */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="w-0.5 h-0.5 rounded-full bg-text-muted" />
+                <div className="w-0.5 h-0.5 rounded-full bg-text-muted" />
+                <div className="w-0.5 h-0.5 rounded-full bg-text-muted" />
+              </div>
+            </div>
+            <div
+              className="shrink-0 overflow-hidden"
+              style={{ width: discussionWidth }}
+            >
+              <DiscussionPanel
+                labId={lab.id}
+                stepIndex={currentStep}
+                questions={step.discussion!}
+                references={step.references}
+                isSubmitted={discussionSubmitted[currentStep]}
+                onSubmit={handleDiscussionSubmit}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* Completion Overlay */}
       <CompletionOverlay
         show={showCompletion}
         onClose={() => setShowCompletion(false)}
+        labId={lab.id}
+        steps={lab.steps}
       />
     </div>
   );

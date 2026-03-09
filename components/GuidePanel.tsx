@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { LabStep } from '@/lib/types';
 
 interface GuidePanelProps {
@@ -8,8 +8,10 @@ interface GuidePanelProps {
   currentStep: number;
   totalSteps: number;
   isCompleted: boolean;
+  isDiscussionSubmitted: boolean;
   onPrev: () => void;
   onNext: () => void;
+  onFinish: () => void;
 }
 
 export default function GuidePanel({
@@ -17,10 +19,32 @@ export default function GuidePanel({
   currentStep,
   totalSteps,
   isCompleted,
+  isDiscussionSubmitted,
   onPrev,
   onNext,
+  onFinish,
 }: GuidePanelProps) {
   const [showHint, setShowHint] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const hintRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyCode = useCallback(() => {
+    if (!hintRef.current) return;
+    const codeEl = hintRef.current.querySelector('pre code');
+    if (!codeEl) return;
+    navigator.clipboard.writeText(codeEl.textContent || '');
+    setCopied(true);
+  }, []);
+
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(id);
+  }, [copied]);
+
+  const hasDiscussion = step.discussion && step.discussion.length > 0;
+  const canAdvance = isCompleted && (!hasDiscussion || isDiscussionSubmitted);
+  const isLastStep = currentStep === totalSteps - 1;
 
   // Content comes from trusted lab config files bundled with the app,
   // not from user input, so dangerouslySetInnerHTML is safe here.
@@ -47,33 +71,28 @@ export default function GuidePanel({
           {...htmlProps(step.description)}
         />
 
-        {/* Mission card */}
+        {/* Mission checklist */}
         <div className="rounded-md bg-bg-elevated border border-border overflow-hidden">
           <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-yellow border-b border-border">
             Mission
           </div>
-          <div
-            className="guide-html p-4 text-sm leading-relaxed text-text-primary"
-            {...htmlProps(step.mission)}
-          />
-        </div>
-
-        {/* Discussion questions */}
-        {step.discussion && step.discussion.length > 0 && (
-          <div className="rounded-md bg-bg-elevated border border-yellow/30 overflow-hidden">
-            <div className="px-4 py-2 text-xs font-bold uppercase tracking-wide text-yellow border-b border-yellow/20 flex items-center gap-1.5">
-              <span>💬</span> 페어와 토론하세요
-            </div>
-            <ul className="p-4 space-y-3">
-              {step.discussion.map((q, i) => (
-                <li key={i} className="flex gap-2.5 text-sm leading-relaxed text-text-secondary">
-                  <span className="mt-0.5 shrink-0 text-yellow font-bold text-xs">Q{i + 1}</span>
-                  <span>{q}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="p-4 space-y-3">
+            {step.mission.map((item, i) => {
+              const checked = i === 0 ? isCompleted : isDiscussionSubmitted;
+              return (
+                <label key={i} className="flex items-start gap-3 cursor-default">
+                  <span className={`mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded border text-[11px] font-bold transition-colors ${checked ? 'border-green bg-green text-bg-deep' : 'border-text-muted/40 text-text-muted'}`}>
+                    {checked ? '✓' : ''}
+                  </span>
+                  <span
+                    className={`guide-html text-sm leading-relaxed transition-colors ${checked ? 'text-text-muted line-through decoration-text-muted/40' : 'text-text-primary'}`}
+                    {...htmlProps(item)}
+                  />
+                </label>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         {/* Hint toggle */}
         {step.hint && (
@@ -85,10 +104,21 @@ export default function GuidePanel({
               {showHint ? '▾ 힌트 숨기기' : '▸ 힌트 보기'}
             </button>
             {showHint && (
-              <div
-                className="guide-html mt-2 rounded-md border border-border bg-bg-elevated p-4 text-sm leading-relaxed text-text-secondary"
-                {...htmlProps(step.hint)}
-              />
+              <div className="mt-2 rounded-md border border-border bg-bg-elevated p-4 text-sm leading-relaxed text-text-secondary">
+                <div
+                  ref={hintRef}
+                  className="guide-html"
+                  {...htmlProps(step.hint)}
+                />
+                {step.hint.includes('<pre>') && (
+                  <button
+                    onClick={handleCopyCode}
+                    className="mt-2 flex items-center gap-1.5 rounded border border-border px-2.5 py-1 text-xs text-text-muted transition-colors hover:border-text-muted hover:text-text-primary"
+                  >
+                    {copied ? '✓ 복사됨' : '📋 코드 복사'}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -109,25 +139,51 @@ export default function GuidePanel({
         )}
       </div>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between border-t border-border p-4">
-        <button
-          onClick={onPrev}
-          disabled={currentStep === 0}
-          className="rounded-md border border-border px-4 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          ← Previous
-        </button>
-        <span className="text-xs text-text-muted">
-          {currentStep + 1} / {totalSteps}
-        </span>
-        <button
-          onClick={onNext}
-          disabled={currentStep === totalSteps - 1}
-          className="rounded-md border border-border px-4 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Next →
-        </button>
+      {/* Bottom navigation */}
+      <div className="border-t border-border">
+        <div className="flex items-center justify-between p-4">
+          <button
+            onClick={onPrev}
+            disabled={currentStep === 0}
+            className="rounded-md border border-border px-4 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            ← Previous
+          </button>
+          <span className="text-xs text-text-muted">
+            {currentStep + 1} / {totalSteps}
+          </span>
+          {isLastStep ? (
+            canAdvance ? (
+              <button
+                onClick={onFinish}
+                className="rounded-md bg-green px-4 py-2 text-sm font-semibold text-bg-deep transition-colors hover:bg-green/80"
+              >
+                미션 완료!
+              </button>
+            ) : (
+              <button
+                disabled
+                className="rounded-md border border-border px-4 py-2 text-sm text-text-muted cursor-not-allowed opacity-40"
+              >
+                미션 완료!
+              </button>
+            )
+          ) : canAdvance ? (
+            <button
+              onClick={onNext}
+              className="rounded-md bg-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue/80"
+            >
+              Next →
+            </button>
+          ) : (
+            <button
+              disabled
+              className="rounded-md border border-border px-4 py-2 text-sm text-text-muted cursor-not-allowed opacity-40"
+            >
+              Next →
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

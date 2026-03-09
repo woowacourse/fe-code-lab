@@ -3,15 +3,36 @@ import { LabStep } from '@/lib/types';
 export const step4: LabStep = {
   badge: 'STEP 4 · 완성',
   title: '도메인은 그대로,\nUI만 새로 붙이기',
-  description: '도메인 분리가 완료되었습니다!<br><br>이제 <strong>Lotto 클래스를 전혀 수정하지 않고</strong>, 별도의 <strong>UI 함수</strong>를 만들어서 웹 화면에 로또 번호를 표시해보세요.<br><br>도메인 코드 한 줄 안 바꾸고 UI를 교체할 수 있다는 것을 직접 경험해보세요!',
-  mission: '<code>renderLottoToHTML(lotto)</code> 함수를 작성하세요. Lotto 객체를 받아 HTML 문자열을 반환합니다.',
-  insight: '도메인은 Step 3에서 완성한 그대로입니다. UI가 콘솔이든 웹이든 모바일이든, 도메인 코드는 바뀌지 않습니다. 이것이 관심사 분리의 진짜 효용입니다.',
+  description: '⚠️ 이 스텝은 새로운 코드에서 시작합니다.<br><br>도메인 분리가 완료되었습니다!<br>이제 <strong>Lotto 클래스를 전혀 수정하지 않고</strong>, 별도의 <strong>UI 함수</strong>를 만들어서 웹 화면에 로또 번호를 표시해보세요.<br>도메인 코드 한 줄 안 바꾸고 UI를 교체할 수 있다는 것을 직접 경험해보세요!',
+  mission: [
+    '<code>renderLottoToHTML(lotto)</code> 함수를 작성하고 테스트를 실행하세요. Lotto 객체를 받아 HTML 문자열을 반환합니다.',
+    '오른쪽 토론 패널에서 페어와 나눈 이야기를 작성하세요.',
+  ],
+  insight: '도메인은 Step 3에서 완성한 그대로입니다.<br><br>UI가 콘솔이든, 웹이든, 모바일이든 — <strong>도메인 코드는 한 줄도 바뀌지 않았습니다.</strong><br><br>관심사를 분리하면 <strong>변경의 영향 범위가 줄어듭니다.</strong><br>이것이 로또 미션에서 도메인과 UI를 나누는 이유입니다.',
   discussion: [
     'Lotto.js 탭을 확인해보세요. Step 3에서 완성한 코드가 한 줄도 바뀌지 않았습니다. 왜 가능할까요?',
     'renderLottoToHTML은 Lotto 클래스 안에 있어야 할까요, 밖에 있어야 할까요? 그 이유는?',
     '만약 "모바일 앱용 렌더링"이 추가된다면, 어떤 파일만 추가하면 될까요?',
   ],
-  hint: 'Lotto의 <code>getNumbers()</code>로 번호를 꺼내고,<br>HTML 문자열을 조합하면 됩니다.<br><br>예: <code>const numbers = lotto.getNumbers();</code><br><code>return "&lt;div class=\\"lotto-numbers\\"&gt;" + numbers.map(n =&gt; "&lt;span class=\\"lotto-ball\\"&gt;" + n + "&lt;/span&gt;").join("") + "&lt;/div&gt;";</code>',
+  references: [
+    {
+      title: '기린 — 도메인 먼저, UI 나중',
+      url: 'https://github.com/woowacourse/javascript-lotto/pull/395',
+      description: '"도메인 로직을 먼저 작성하고 UI를 나중에 붙이면 핵심 로직을 안정적으로 다듬을 수 있다"',
+    },
+    {
+      title: '메타 — 동일한 도메인, 다른 UI',
+      url: 'https://github.com/woowacourse/javascript-lotto/pull/397',
+      description: '"Step1(콘솔)과 Step2(Web)에서 동일한 도메인 로직을 유지하려고 한 점이 인상적"',
+    },
+  ],
+  hint: `Lotto의 <code>getNumbers()</code>로 번호를 꺼내고, HTML 문자열을 조합하면 됩니다.<br><br><pre><code>function renderLottoToHTML(lotto) {
+  const numbers = lotto.getNumbers();
+  const balls = numbers
+    .map(n =&gt; \`&lt;span class="lotto-ball"&gt;\${n}&lt;/span&gt;\`)
+    .join("");
+  return \`&lt;div class="lotto-numbers"&gt;\${balls}&lt;/div&gt;\`;
+}</code></pre>`,
   tabs: [
     { name: 'Lotto.js', readonly: true },
     { name: 'ui.js', readonly: false },

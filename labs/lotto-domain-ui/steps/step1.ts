@@ -3,13 +3,28 @@ import { LabStep } from '@/lib/types';
 export const step1: LabStep = {
   badge: 'STEP 1 · 관찰',
   title: '도메인과 UI가\n섞여 있는 코드',
-  description: '아래 <strong>Lotto</strong> 클래스를 살펴보세요.<br><br>이 클래스에는 <strong>여러 가지 역할의 메서드</strong>가 한 곳에 모여 있습니다.<br><br>각 메서드가 <strong>어떤 역할</strong>을 하는지 페어와 이야기해보세요.',
-  mission: '코드를 읽고 테스트를 실행해보세요. 모든 테스트가 통과합니다.',
-  insight: '하나의 클래스가 "데이터 관리 + 비즈니스 로직 + 출력"을 모두 담당하고 있습니다. 지금은 잘 동작하지만, UI가 바뀌면 어떻게 될까요?',
+  description: '아래 <strong>Lotto</strong> 클래스를 살펴보세요. <br> 이 클래스에는 <strong>여러 가지 역할의 메서드</strong>가 한 곳에 모여 있습니다. 각 메서드가 <strong>어떤 역할</strong>을 하는지 페어와 이야기해보세요.',
+  mission: [
+    '코드를 읽고 하단의 <strong>▶ Run Tests</strong> 버튼을 눌러 테스트를 실행해보세요.',
+    '오른쪽 토론 패널에서 페어와 나눈 이야기를 작성하세요.',
+  ],
+  insight: '하나의 클래스 안에 두 종류의 메서드가 함께 있습니다.<br><br><strong>데이터를 다루는 메서드</strong><br><code>#validate</code>, <code>matchCount</code><br><br><strong>결과를 보여주는 메서드</strong><br><code>printNumbers</code>, <code>printMatchResult</code><br><br>지금은 잘 동작하지만, 만약 콘솔 대신 웹 화면에 보여줘야 한다면?<br>다음 Step에서 직접 바꿔보겠습니다.',
   discussion: [
     '각 메서드를 "데이터를 다루는 것"과 "결과를 보여주는 것"으로 나눠보세요.',
     'printNumbers()와 matchCount()의 차이는 무엇인가요? 하나를 제거하면 나머지에 영향이 있을까요?',
     '만약 콘솔이 아니라 웹 화면에 결과를 보여줘야 한다면, 어떤 메서드를 바꿔야 할까요?',
+  ],
+  references: [
+    {
+      title: '기린 — 도메인과 UI 결합 리뷰',
+      url: 'https://github.com/woowacourse/javascript-lotto/pull/395',
+      description: '"도메인 로직과 UI 로직이 강하게 결합되어 있다"는 리뷰어 피드백',
+    },
+    {
+      title: '에리얼 — 콘솔에서 웹으로의 전환',
+      url: 'https://github.com/woowacourse/javascript-lotto/pull/405',
+      description: '"도메인 코드를 재활용할 수 있도록 설계했던 경험"',
+    },
   ],
   tabs: [
     { name: 'Lotto.js', readonly: true },

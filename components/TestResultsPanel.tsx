@@ -6,33 +6,46 @@ interface TestResultsPanelProps {
   results: TestResult[] | null;
   onRun: () => void;
   isRunning: boolean;
-  onToggle?: () => void;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
 export default function TestResultsPanel({
   results,
   onRun,
   isRunning,
+  isOpen,
   onToggle,
 }: TestResultsPanelProps) {
   const passCount = results?.filter((r) => r.pass).length ?? 0;
   const failCount = results ? results.length - passCount : 0;
   const allPassed = results !== null && failCount === 0;
 
-  const titleStatus = results
+  const statusBadge = results
     ? allPassed
-      ? ' — ✓ 통과'
-      : ` — ✗ ${failCount}개 실패`
-    : '';
+      ? { text: `✓ ${passCount}개 통과`, color: 'text-green' }
+      : { text: `✗ ${failCount}개 실패`, color: 'text-red' }
+    : null;
 
   return (
-    <div className="flex h-full flex-col bg-bg-surface">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-2">
-        <span className="text-xs font-semibold text-text-secondary">
-          테스트 결과{titleStatus}
-        </span>
-        <div className="flex items-center gap-2">
+    <div className="border-t border-border bg-bg-surface">
+      {/* Header — always visible, acts as toggle */}
+      <button
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-2 hover:bg-bg-elevated/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-text-muted">{isOpen ? '▾' : '▸'}</span>
+          <span className="text-xs font-semibold text-text-secondary">테스트 결과</span>
+          {statusBadge && (
+            <span className={`text-xs font-semibold ${statusBadge.color}`}>
+              {statusBadge.text}
+            </span>
+          )}
+        </div>
+        <div
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             onClick={onRun}
             disabled={isRunning}
@@ -40,61 +53,41 @@ export default function TestResultsPanel({
           >
             {isRunning ? '실행 중…' : '▶ 테스트 실행'}
           </button>
-          {onToggle && (
-            <button
-              onClick={onToggle}
-              className="rounded-md px-1.5 py-1 text-xs text-text-muted hover:text-text-secondary transition-colors"
-              title="패널 접기"
-            >
-              ▸
-            </button>
+        </div>
+      </button>
+
+      {/* Body — collapsible */}
+      {isOpen && (
+        <div className="max-h-[200px] overflow-y-auto border-t border-border/50 px-4 py-2 text-sm">
+          {results === null ? (
+            <p className="py-2 text-center text-xs text-text-muted">
+              코드를 작성하고 테스트를 실행해보세요
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {results.map((r, i) => (
+                <div key={i}>
+                  <div
+                    className={`flex items-center gap-2 rounded px-2.5 py-1 ${
+                      r.pass
+                        ? 'bg-green-bg text-green'
+                        : 'bg-red-bg text-red'
+                    }`}
+                  >
+                    <span className="text-xs">{r.pass ? '✓' : '✗'}</span>
+                    <span className="font-mono text-xs">{r.name}</span>
+                  </div>
+                  {!r.pass && r.error && (
+                    <p className="mt-0.5 pl-6 text-xs text-text-muted">
+                      {r.error}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto p-3 text-sm">
-        {results === null ? (
-          <p className="py-4 text-center text-sm text-text-muted">
-            코드를 작성하고 테스트를 실행해보세요
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            {results.map((r, i) => (
-              <div key={i}>
-                <div
-                  className={`flex items-center gap-2 rounded-md px-3 py-1.5 ${
-                    r.pass
-                      ? 'bg-green-bg text-green'
-                      : 'bg-red-bg text-red'
-                  }`}
-                >
-                  <span className="text-xs">{r.pass ? '✓' : '✗'}</span>
-                  <span className="font-mono text-xs">{r.name}</span>
-                </div>
-                {!r.pass && r.error && (
-                  <p className="mt-1 pl-7 text-xs text-text-muted">
-                    {r.error}
-                  </p>
-                )}
-              </div>
-            ))}
-
-            {/* Summary */}
-            <div className="mt-3 border-t border-border pt-2">
-              {allPassed ? (
-                <p className="text-xs font-semibold text-green">
-                  ✓ {passCount}개 테스트 모두 통과!
-                </p>
-              ) : (
-                <p className="text-xs font-semibold text-red">
-                  ✗ {failCount}개 실패 / {passCount}개 통과
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -3,15 +3,32 @@ import { LabStep } from '@/lib/types';
 export const step3: LabStep = {
   badge: 'STEP 3 · 리팩터링',
   title: '도메인에서\nUI를 분리하세요',
-  description: '문제를 확인했으니 이제 해결해봅시다.<br><br><strong>Lotto</strong> 클래스에서 UI 로직(<code>printNumbers</code>, <code>printMatchResult</code>)을 <strong>제거</strong>하고, 대신 외부에서 번호를 가져갈 수 있도록 <code>getNumbers()</code> 메서드를 추가하세요.<br><br>도메인 객체는 <strong>데이터와 비즈니스 로직만</strong> 가져야 합니다.',
-  mission: '<code>printNumbers()</code>와 <code>printMatchResult()</code>를 제거하고, <code>getNumbers()</code> 메서드를 추가하세요.',
-  insight: '도메인 객체가 "어떻게 보여줄지"를 모르게 만드는 것이 핵심입니다. 번호를 어디에 어떤 형태로 보여줄지는 UI의 관심사이지, Lotto의 관심사가 아닙니다.',
+  description: '⚠️ 이 스텝은 새로운 코드에서 시작합니다.<br><br>문제를 확인했으니 이제 해결해봅시다.<br>아래 순서대로 진행하세요:<br>① <code>printNumbers()</code>와 <code>printMatchResult()</code>를 <strong>삭제</strong><br>② <code>getNumbers()</code> 메서드를 <strong>새로 추가</strong> — 힌트를 참고하세요<br>③ 테스트를 실행하여 모두 통과하는지 확인',
+  mission: [
+    '<code>printNumbers()</code>, <code>printMatchResult()</code>를 삭제하고 <code>getNumbers()</code>를 추가한 뒤 테스트를 실행하세요. (힌트 참고)',
+    '오른쪽 토론 패널에서 페어와 나눈 이야기를 작성하세요.',
+  ],
+  insight: '도메인 객체가 <strong>"어떻게 보여줄지"를 모르게</strong> 만드는 것이 핵심입니다.<br><br>번호를 어디에, 어떤 형태로 보여줄지는 <strong>UI의 관심사</strong>이지, Lotto의 관심사가 아닙니다.<br><br>이제 분리된 도메인은 그대로 두고, 새로운 UI를 붙여봅시다.',
   discussion: [
     'getNumbers()가 복사본을 반환해야 하는 이유는 무엇인가요? 원본 배열을 반환하면 어떤 문제가 생길까요?',
     'printNumbers()를 제거한 후, 테스트 코드에서 달라진 점은 무엇인가요?',
     '이제 Lotto 클래스는 "어떻게 보여줄지"에 대해 알고 있나요?',
   ],
-  hint: '<code>getNumbers()</code>는 내부 배열의 복사본을 반환합니다.<br><code>return [...this.#numbers];</code><br><br>복사본을 반환하는 이유: 외부에서 원본 배열을 수정하는 것을 방지합니다 (캡슐화).',
+  references: [
+    {
+      title: '해삐 — SSOT 원칙과 데이터 분리',
+      url: 'https://github.com/woowacourse/javascript-lotto/pull/413',
+      description: '"동일한 대상을 가리키는 데이터는 하나여야 하며 중복이 있어서는 안 된다"',
+    },
+    {
+      title: '아더 — 정적/동적 UI 분리',
+      url: 'https://github.com/woowacourse/javascript-lotto/pull/398',
+      description: '"항상 존재해야 하는 UI는 정적으로, 데이터 기반 UI는 동적으로 생성"',
+    },
+  ],
+  hint: `복사본을 반환하는 이유: 외부에서 원본 배열을 수정하는 것을 방지합니다 (캡슐화).<br><br><pre><code>getNumbers() {
+  return [...this.#numbers];
+}</code></pre>`,
   tabs: [
     { name: 'Lotto.js', readonly: false },
     { name: 'test.js', readonly: true }
@@ -43,9 +60,8 @@ export const step3: LabStep = {
     ).length;
   }
 
-  // ✏️ printNumbers()와 printMatchResult()를 제거하고
-  // getNumbers() 메서드를 추가하세요.
-  // getNumbers()는 번호 배열의 복사본을 반환합니다.
+  // ✏️ 이 클래스에서 "결과를 보여주는" 메서드를 찾아 제거하세요.
+  // 대신, 외부에서 번호 데이터에 접근할 수 있는 방법을 만들어보세요.
 
   printNumbers() {
     console.log("[" + this.#numbers.join(", ") + "]");

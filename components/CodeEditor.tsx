@@ -7,6 +7,9 @@ import { javascript } from '@codemirror/lang-javascript';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { bracketMatching } from '@codemirror/language';
+import { format } from 'prettier/standalone';
+import * as prettierBabel from 'prettier/plugins/babel';
+import * as prettierEstree from 'prettier/plugins/estree';
 
 interface CodeEditorProps {
   value: string;
@@ -64,6 +67,29 @@ export default function CodeEditor({
     onChangeRef.current = onChange;
   }, [onChange]);
 
+  const formatCode = useCallback(async (view: EditorView) => {
+    const code = view.state.doc.toString();
+    try {
+      const formatted = await format(code, {
+        parser: 'babel',
+        plugins: [prettierBabel, prettierEstree],
+        singleQuote: true,
+        trailingComma: 'all',
+        printWidth: 80,
+        tabWidth: 2,
+      });
+      const trimmed = formatted.trimEnd();
+      if (trimmed !== code) {
+        view.dispatch({
+          changes: { from: 0, to: code.length, insert: trimmed },
+        });
+        onChangeRef.current?.(trimmed);
+      }
+    } catch {
+      // 구문 오류가 있는 코드는 포맷하지 않음
+    }
+  }, []);
+
   const getExtensions = useCallback(() => {
     const extensions = [
       lineNumbers(),
@@ -72,7 +98,17 @@ export default function CodeEditor({
       javascript(),
       oneDark,
       customTheme,
-      keymap.of([...defaultKeymap, ...historyKeymap]),
+      keymap.of([
+        {
+          key: 'Mod-s',
+          run: (view) => {
+            formatCode(view);
+            return true;
+          },
+        },
+        ...defaultKeymap,
+        ...historyKeymap,
+      ]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           onChangeRef.current?.(update.state.doc.toString());
@@ -88,7 +124,7 @@ export default function CodeEditor({
     }
 
     return extensions;
-  }, [readonly]);
+  }, [readonly, formatCode]);
 
   // Create editor
   useEffect(() => {
