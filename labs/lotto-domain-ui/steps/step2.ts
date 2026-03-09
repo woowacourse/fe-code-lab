@@ -3,9 +3,9 @@ import { LabStep } from '@/lib/types';
 export const step2: LabStep = {
   badge: 'STEP 2 · 문제 발견',
   title: 'UI를 바꾸면\n테스트가 깨집니다',
-  description: '⚠️ 이 스텝은 새로운 코드에서 시작합니다.<br><br>이제 <strong>웹 UI</strong>로 출력을 바꿔봅시다.<br><code>printNumbers()</code> 메서드를 수정해서 <code>console.log</code> 대신 <strong>HTML 문자열을 반환</strong>하도록 바꿔보세요.<br>수정 후 테스트를 실행해보면... <strong>기존 테스트가 깨집니다!</strong>',
+  description: '이전 스텝의 코드에서 이어집니다. 이번엔 <strong>직접 수정</strong>할 수 있습니다!<br><br>이제 <strong>웹 UI</strong>로 출력을 바꿔봅시다.<br><code>printNumbers()</code> 안의 <code>console.log(...)</code> 한 줄을 <code>return ...</code>으로 바꿔보세요.<br>수정 후 테스트를 실행해보면... <strong>기존 테스트가 깨집니다!</strong>',
   mission: [
-    '<code>printNumbers()</code>에서 <code>console.log</code> 줄을 <strong>제거</strong>하고, HTML 문자열을 <code>return</code>하도록 수정한 뒤 테스트를 실행하세요.',
+    '<code>printNumbers()</code> 안의 <code>console.log(...)</code>를 <code>return</code>으로 바꾸세요. 문자열 내용은 그대로 두고 <strong>출력 방식만</strong> 바꾸면 됩니다.',
     '오른쪽 토론 패널에서 페어와 나눈 이야기를 작성하세요.',
   ],
   insight: '5개 테스트 중 <strong>4개는 통과</strong>하고, <strong>1개만 깨졌습니다.</strong><br><br>깨진 테스트는 <strong>출력 방식(console.log)</strong>에 의존하고 있었고, 통과한 테스트는 <strong>입력 → 반환값</strong>만 검증하고 있었습니다.<br><br>출력 방식을 검증하는 테스트가 도메인 클래스 안에 있었기 때문에, UI를 바꾸자 <strong>함께 깨진 것</strong>입니다.<br><br>이것이 <strong>"관심사 분리"</strong>가 필요한 이유입니다.<br>다음 Step에서 이 문제를 해결해봅시다.',
@@ -26,10 +26,10 @@ export const step2: LabStep = {
       description: '"입력값 형식 검증은 UI 계층, 비즈니스 규칙 검증은 도메인 계층의 책임"',
     },
   ],
-  hint: `<code>printNumbers()</code> 안에서 console.log 대신 HTML 문자열을 반환하도록 바꿔보세요.<br><br><pre><code>printNumbers() {
-  return \`&lt;div class="lotto"&gt;\${this.#numbers.join(", ")}&lt;/div&gt;\`;
+  hint: `<code>console.log(...)</code>를 <code>return ...</code>으로 바꾸면 됩니다. 문자열 내용은 그대로!<br><br><pre><code>printNumbers() {
+  return "[" + this.#numbers.join(", ") + "]";
 }</code></pre>`,
-  expectFailure: true,
+  expectFailure: { passCount: 4, failCount: 1 },
   tabs: [
     { name: 'Lotto.js', readonly: false },
     { name: 'test.js', readonly: true }
@@ -61,8 +61,7 @@ export const step2: LabStep = {
     ).length;
   }
 
-  // ✏️ 이 메서드를 수정하세요!
-  // console.log 대신 HTML 문자열을 반환하도록 바꿔보세요.
+  // ✏️ 아래 console.log(...)를 return(...)으로 바꿔보세요!
   printNumbers() {
     console.log("[" + this.#numbers.join(", ") + "]");
   }

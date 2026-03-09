@@ -3,9 +3,9 @@ import { LabStep } from '@/lib/types';
 export const step3: LabStep = {
   badge: 'STEP 3 · 리팩터링',
   title: '도메인에서\nUI를 분리하세요',
-  description: '⚠️ 이 스텝은 새로운 코드에서 시작합니다.<br><br>문제를 확인했으니 이제 해결해봅시다.<br>아래 순서대로 진행하세요:<br>① <code>printNumbers()</code>와 <code>printMatchResult()</code>를 <strong>삭제</strong><br>② <code>getNumbers()</code> 메서드를 <strong>새로 추가</strong> — 힌트를 참고하세요<br>③ 테스트를 실행하여 모두 통과하는지 확인',
+  description: '이번 스텝에서는 직접 리팩터링합니다.<br><br>아래 순서대로 진행하세요:<br>① <code>❌</code> 표시된 두 메서드를 <strong>삭제</strong><br>② <code>getNumbers()</code>의 <code>// 여기에 구현하세요</code>를 채우세요<br>③ 테스트를 실행하여 모두 통과하는지 확인',
   mission: [
-    '<code>printNumbers()</code>, <code>printMatchResult()</code>를 삭제하고 <code>getNumbers()</code>를 추가한 뒤 테스트를 실행하세요. (힌트 참고)',
+    '<code>❌</code> 표시된 메서드를 삭제하고, <code>getNumbers()</code>를 구현한 뒤 테스트를 실행하세요.',
     '오른쪽 토론 패널에서 페어와 나눈 이야기를 작성하세요.',
   ],
   insight: '도메인 객체가 <strong>"어떻게 보여줄지"를 모르게</strong> 만드는 것이 핵심입니다.<br><br>번호를 어디에, 어떤 형태로 보여줄지는 <strong>UI의 관심사</strong>이지, Lotto의 관심사가 아닙니다.<br><br>이제 분리된 도메인은 그대로 두고, 새로운 UI를 붙여봅시다.',
@@ -60,16 +60,21 @@ export const step3: LabStep = {
     ).length;
   }
 
-  // ✏️ 이 클래스에서 "결과를 보여주는" 메서드를 찾아 제거하세요.
-  // 대신, 외부에서 번호 데이터에 접근할 수 있는 방법을 만들어보세요.
-
+  // ❌ 이 메서드를 삭제하세요
   printNumbers() {
     console.log("[" + this.#numbers.join(", ") + "]");
   }
 
+  // ❌ 이 메서드를 삭제하세요
   printMatchResult(winningNumbers) {
     const count = this.matchCount(winningNumbers);
     console.log(count + "개 일치");
+  }
+
+  // ✏️ 번호 배열을 반환하는 메서드를 구현하세요.
+  // 힌트: 원본 대신 복사본을 반환해야 합니다. 왜일까요?
+  getNumbers() {
+    // 여기에 구현하세요
   }
 }`,
     'test.js': `// 새로운 테스트: 분리된 도메인만 검증합니다.

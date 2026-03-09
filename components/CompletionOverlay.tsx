@@ -47,6 +47,8 @@ export default function CompletionOverlay({
   const [phase, setPhase] = useState<Phase>('celebrate');
   const [copied, setCopied] = useState(false);
   const [visibleSteps, setVisibleSteps] = useState(0);
+  const [showRocket, setShowRocket] = useState(false);
+  const [showCard, setShowCard] = useState(false);
 
   // Fire confetti when overlay shows
   useEffect(() => {
@@ -54,24 +56,37 @@ export default function CompletionOverlay({
     setPhase('celebrate');
     setVisibleSteps(0);
     setCopied(false);
+    setShowRocket(true);
+    setShowCard(false);
 
-    const fire = () => {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6, x: 0.3 },
-        colors: ['#3fb950', '#58a6ff', '#d29922', '#bc8cff', '#f85149'],
-      });
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6, x: 0.7 },
-        colors: ['#3fb950', '#58a6ff', '#d29922', '#bc8cff', '#f85149'],
-      });
+    // Show card and fire confetti after rocket passes center (~1.2s)
+    const cardTimer = setTimeout(() => {
+      setShowCard(true);
+      const fire = () => {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6, x: 0.3 },
+          colors: ['#3fb950', '#58a6ff', '#d29922', '#bc8cff', '#f85149'],
+        });
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6, x: 0.7 },
+          colors: ['#3fb950', '#58a6ff', '#d29922', '#bc8cff', '#f85149'],
+        });
+      };
+      fire();
+      setTimeout(fire, 600);
+    }, 1200);
+
+    // Hide rocket after animation ends
+    const rocketTimer = setTimeout(() => setShowRocket(false), 2600);
+
+    return () => {
+      clearTimeout(cardTimer);
+      clearTimeout(rocketTimer);
     };
-    fire();
-    const t = setTimeout(fire, 600);
-    return () => clearTimeout(t);
   }, [show]);
 
   // Animate timeline steps appearing one by one
@@ -102,26 +117,41 @@ export default function CompletionOverlay({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm">
       {phase === 'celebrate' && (
-        <div className="mx-4 max-w-md rounded-xl border border-border bg-bg-surface p-8 text-center shadow-2xl animate-fade-in">
-          <div className="text-6xl">🎉</div>
-          <h2 className="mt-4 text-2xl font-extrabold text-text-primary">
-            모든 단계를 완료했습니다!
-          </h2>
-          <div className="mt-4 space-y-2 text-sm leading-relaxed text-text-secondary">
-            <p>
-              <strong className="text-text-primary">
-                도메인 코드는 한 줄도 바꾸지 않고, UI만 교체할 수 있었습니다.
-              </strong>
-            </p>
-            <p>이것이 관심사 분리의 효용입니다.</p>
-          </div>
-          <button
-            onClick={handleShowTimeline}
-            className="mt-6 rounded-md bg-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue/80"
-          >
-            여정 돌아보기
-          </button>
-        </div>
+        <>
+          {/* Rocket flying from bottom to top */}
+          {showRocket && (
+            <img
+              src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhZagUJqtSMlC4Nh73mszXgjG0x5R2aTxK8JRhp67QSOA-Qb4YdYb1TkZBEj0COzuHykMtARbEifHrD4_YAS9xrxl961J66sx17JwmMFokDuWgIhBsYk6evljNR3BIYyJ-eARiOmxuOp7ia/s1600/space_rocket_kids_naname.png"
+              alt="로켓"
+              className="animate-rocket-launch fixed z-[60] w-48 h-48 object-contain"
+              style={{ left: '50%', top: '50%', marginLeft: '-96px', marginTop: '-96px' }}
+            />
+          )}
+
+          {/* Celebration card (appears after rocket passes) */}
+          {showCard && (
+            <div className="mx-4 max-w-md rounded-xl border border-border bg-bg-surface p-8 text-center shadow-2xl animate-fade-in">
+              <div className="text-6xl">🎉</div>
+              <h2 className="mt-4 text-2xl font-extrabold text-text-primary">
+                모든 단계를 완료했습니다!
+              </h2>
+              <div className="mt-4 space-y-2 text-sm leading-relaxed text-text-secondary">
+                <p>
+                  <strong className="text-text-primary">
+                    도메인 코드는 한 줄도 바꾸지 않고, UI만 교체할 수 있었습니다.
+                  </strong>
+                </p>
+                <p>이것이 관심사 분리의 효용입니다.</p>
+              </div>
+              <button
+                onClick={handleShowTimeline}
+                className="mt-6 rounded-md bg-blue px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue/80"
+              >
+                여정 돌아보기
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {phase === 'timeline' && (

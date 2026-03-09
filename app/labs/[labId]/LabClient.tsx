@@ -15,19 +15,38 @@ interface LabClientProps {
 }
 
 export default function LabClient({ lab }: LabClientProps) {
+  const [stepCompleted, setStepCompleted] = useState<boolean[]>(() => {
+    if (typeof window === 'undefined') return new Array(lab.steps.length).fill(false);
+    try {
+      const saved = localStorage.getItem(`lab:${lab.id}:completed`);
+      if (saved) {
+        const parsed = JSON.parse(saved) as boolean[];
+        if (parsed.length === lab.steps.length) return parsed;
+      }
+    } catch { /* ignore */ }
+    return new Array(lab.steps.length).fill(false);
+  });
   const [currentStep, setCurrentStep] = useState(() => {
     if (typeof window === 'undefined') return 0;
     const match = window.location.hash.match(/step=(\d+)/);
     if (match) {
       const idx = Number(match[1]) - 1;
-      if (idx >= 0 && idx < lab.steps.length) return idx;
+      if (idx >= 0 && idx < lab.steps.length) {
+        const allPrevCompleted = Array.from({ length: idx }, (_, i) => i).every(
+          (i) => {
+            try {
+              const saved = localStorage.getItem(`lab:${lab.id}:completed`);
+              if (saved) return (JSON.parse(saved) as boolean[])[i];
+            } catch { /* ignore */ }
+            return false;
+          }
+        );
+        if (allPrevCompleted) return idx;
+      }
     }
     return 0;
   });
   const [activeTab, setActiveTab] = useState(0);
-  const [stepCompleted, setStepCompleted] = useState<boolean[]>(
-    () => new Array(lab.steps.length).fill(false)
-  );
   const [userEdits, setUserEdits] = useState<Record<string, string>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -62,6 +81,15 @@ export default function LabClient({ lab }: LabClientProps) {
     }
   }, [lab.id, userEdits]);
 
+  // 스텝 완료 상태 localStorage 저장
+  useEffect(() => {
+    try {
+      localStorage.setItem(`lab:${lab.id}:completed`, JSON.stringify(stepCompleted));
+    } catch {
+      // localStorage 용량 초과 등 무시
+    }
+  }, [lab.id, stepCompleted]);
+
   // 브라우저 뒤로가기/앞으로가기 대응
   useEffect(() => {
     const onHashChange = () => {
@@ -69,15 +97,21 @@ export default function LabClient({ lab }: LabClientProps) {
       if (match) {
         const stepIndex = Number(match[1]) - 1;
         if (stepIndex >= 0 && stepIndex < lab.steps.length) {
-          setCurrentStep(stepIndex);
-          setActiveTab(0);
-          setTestResults(null);
+          const canAccess = stepIndex === 0 ||
+            Array.from({ length: stepIndex }, (_, i) => i).every((i) => stepCompleted[i]);
+          if (canAccess) {
+            setCurrentStep(stepIndex);
+            setActiveTab(0);
+            setTestResults(null);
+          } else {
+            window.location.hash = `step=${currentStep + 1}`;
+          }
         }
       }
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, [lab.steps.length]);
+  }, [lab.steps.length, stepCompleted, currentStep]);
 
   const step = lab.steps[currentStep];
   const tabs = step.tabs;
@@ -114,6 +148,10 @@ export default function LabClient({ lab }: LabClientProps) {
 
   const handleStepChange = useCallback(
     (stepIndex: number) => {
+      const canAccess = stepIndex === 0 ||
+        Array.from({ length: stepIndex }, (_, i) => i).every((i) => stepCompleted[i]);
+      if (!canAccess) return;
+
       const currentCode = getCodeForTab(currentStep, activeTab);
       const key = `${currentStep}-${activeTab}`;
       setUserEdits((prev) => ({ ...prev, [key]: currentCode }));
@@ -121,7 +159,7 @@ export default function LabClient({ lab }: LabClientProps) {
       setActiveTab(0);
       setTestResults(null);
     },
-    [currentStep, activeTab, getCodeForTab]
+    [currentStep, activeTab, getCodeForTab, stepCompleted]
   );
 
   const handlePrev = useCallback(() => {
@@ -169,9 +207,20 @@ export default function LabClient({ lab }: LabClientProps) {
       const results = await runTestsInWorker(codeBlocks, testCode);
       setTestResults(results);
 
-      const allPass = results.every((r) => r.pass);
-      const anyFail = results.some((r) => !r.pass);
-      const isComplete = step.expectFailure ? anyFail : allPass;
+      const passCount = results.filter((r) => r.pass).length;
+      const failCount = results.filter((r) => !r.pass).length;
+      const allPass = failCount === 0;
+
+      let isComplete: boolean;
+      if (typeof step.expectFailure === 'object') {
+        isComplete =
+          passCount === step.expectFailure.passCount &&
+          failCount === step.expectFailure.failCount;
+      } else if (step.expectFailure) {
+        isComplete = failCount > 0;
+      } else {
+        isComplete = allPass;
+      }
 
       if (isComplete) {
         setStepCompleted((prev) => {

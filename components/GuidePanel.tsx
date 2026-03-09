@@ -123,8 +123,8 @@ export default function GuidePanel({
           </div>
         )}
 
-        {/* Insight card — revealed after step completion */}
-        {isCompleted ? (
+        {/* Insight card — revealed after all missions complete (test + discussion) */}
+        {canAdvance ? (
           <div className="rounded-md bg-gradient-to-br from-purple/10 to-purple/5 border border-purple/20 p-4">
             <div className="mb-2 text-sm font-bold text-purple">★ Insight</div>
             <div

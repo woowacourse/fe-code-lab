@@ -18,7 +18,7 @@ export interface LabStep {
   hint?: string;
   discussion?: string[];
   references?: LabReference[];
-  expectFailure?: boolean;
+  expectFailure?: boolean | { passCount: number; failCount: number };
   tabs: LabTab[];
   files: Record<string, string>;
 }
