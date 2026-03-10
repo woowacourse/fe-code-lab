@@ -338,6 +338,7 @@ export default function LabClient({ lab }: LabClientProps) {
             isRunning={isRunning}
             isOpen={testPanelOpen}
             onToggle={() => setTestPanelOpen((v) => !v)}
+            expectFailure={step.expectFailure}
           />
         </div>
 

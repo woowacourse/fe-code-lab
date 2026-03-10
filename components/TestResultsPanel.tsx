@@ -8,6 +8,7 @@ interface TestResultsPanelProps {
   isRunning: boolean;
   isOpen: boolean;
   onToggle: () => void;
+  expectFailure?: boolean | { passCount: number; failCount: number };
 }
 
 export default function TestResultsPanel({
@@ -16,15 +17,27 @@ export default function TestResultsPanel({
   isRunning,
   isOpen,
   onToggle,
+  expectFailure,
 }: TestResultsPanelProps) {
   const passCount = results?.filter((r) => r.pass).length ?? 0;
   const failCount = results ? results.length - passCount : 0;
   const allPassed = results !== null && failCount === 0;
 
+  const isExpectedFailure = results !== null && !!expectFailure && failCount > 0;
+  const isStepComplete = results !== null && (
+    typeof expectFailure === 'object'
+      ? passCount === expectFailure.passCount && failCount === expectFailure.failCount
+      : expectFailure
+        ? failCount > 0
+        : allPassed
+  );
+
   const statusBadge = results
-    ? allPassed
-      ? { text: `✓ ${passCount}개 통과`, color: 'text-green' }
-      : { text: `✗ ${failCount}개 실패`, color: 'text-red' }
+    ? isStepComplete && isExpectedFailure
+      ? { text: `${passCount}개 통과, ${failCount}개 실패 — 의도된 결과입니다!`, color: 'text-yellow' }
+      : allPassed
+        ? { text: `✓ ${passCount}개 통과`, color: 'text-green' }
+        : { text: `✗ ${failCount}개 실패`, color: 'text-red' }
     : null;
 
   return (
@@ -71,10 +84,12 @@ export default function TestResultsPanel({
                     className={`flex items-center gap-2 rounded px-2.5 py-1 ${
                       r.pass
                         ? 'bg-green-bg text-green'
-                        : 'bg-red-bg text-red'
+                        : isExpectedFailure
+                          ? 'bg-yellow-bg text-yellow'
+                          : 'bg-red-bg text-red'
                     }`}
                   >
-                    <span className="text-xs">{r.pass ? '✓' : '✗'}</span>
+                    <span className="text-xs">{r.pass ? '✓' : isExpectedFailure ? '⚡' : '✗'}</span>
                     <span className="font-mono text-xs">{r.name}</span>
                   </div>
                   {!r.pass && r.error && (
@@ -84,6 +99,11 @@ export default function TestResultsPanel({
                   )}
                 </div>
               ))}
+              {isStepComplete && isExpectedFailure && (
+                <div className="mt-2 rounded-md bg-yellow-bg px-3 py-2 text-xs text-yellow">
+                  이 테스트가 깨진 것이 바로 이번 스텝의 핵심입니다! 왜 깨졌는지 토론 패널에서 페어와 이야기해보세요.
+                </div>
+              )}
             </div>
           )}
         </div>
